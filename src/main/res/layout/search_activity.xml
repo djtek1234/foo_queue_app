@@ -1,0 +1,68 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    tools:context="djt3k.fooqueue.search_activity"
+    android:id="@+id/activity2">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Music Results:"
+        android:id="@+id/txtTitle"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:textSize="18dp" />
+
+    <ListView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/lstResults"
+        android:background="#ffeae0ff"
+        android:clickable="true"
+        android:layout_below="@+id/txtTitle"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:listSelector="#ffffbd01"
+        android:divider="#ff000000"
+        android:paddingLeft="2px"
+        android:paddingRight="2px"
+        android:paddingTop="2px"
+        android:paddingBottom="2px"
+        android:checkMark="?android:attr/listChoiceIndicatorMultiple"
+        android:layout_above="@+id/butBack" />
+
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/scrollView"
+        android:layout_centerVertical="true"
+        android:layout_alignRight="@+id/lstResults"
+        android:layout_alignEnd="@+id/lstResults"
+        android:layout_marginRight="347dp"
+        android:layout_marginEnd="347dp" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Go Back"
+        android:id="@+id/butBack"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:nestedScrollingEnabled="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Request Song"
+        android:id="@+id/butReq"
+        android:layout_alignTop="@+id/butBack"
+        android:layout_toRightOf="@+id/butBack"
+        android:layout_toEndOf="@+id/butBack" />
+
+
+</RelativeLayout>
