@@ -107,7 +107,6 @@ public class search_activity extends ActionBarActivity {
         output.putExtra("selected", selected);
         setResult(RESULT_OK, output);
         finish();
-
     }
 /*
     @Override

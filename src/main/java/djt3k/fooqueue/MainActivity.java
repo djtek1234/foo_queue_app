@@ -16,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.content.Intent;
@@ -23,11 +24,11 @@ import android.content.Intent;
 import java.io.InputStreamReader;
 import android.database.sqlite.SQLiteAbortException;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.Cursor;
+
 import java.io.OutputStream;
 import java.io.FileOutputStream;
 
-import android.widget.RadioGroup;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.os.StrictMode;
 import java.util.regex.*;
@@ -49,14 +50,13 @@ public class MainActivity extends ActionBarActivity {
     public static final String PREFS_NAME = "FooQueuePrefs";
 
     ArrayList<String> searchResults = new ArrayList<String>();
+    ArrayList<String> playlistResults = new ArrayList<String>();
 
     String searchData;
-    //String track = "";
     boolean searchRes = false;
 
-    // Create global database - deprecated
-    //public SQLiteDatabase masterDb;
-    //public SQLiteDatabase singlesDb;
+    int playlistAction = -1;
+    String playlistString = "";
 
     // Create global buttons
     Button button;
@@ -71,7 +71,7 @@ public class MainActivity extends ActionBarActivity {
     Button button10;
     Button button11;
     Button button12;
-    //Button button13;
+    Button button13;
     TextView currentTrack;
 
     // Global server instance..to be deprecaed
@@ -93,13 +93,16 @@ public class MainActivity extends ActionBarActivity {
         button4 = (Button)findViewById(R.id.butDown);
         button5 = (Button)findViewById(R.id.butMute);
         button6 = (Button)findViewById(R.id.butSettings);
-        button7 = (Button)findViewById(R.id.butPlay);
+        button7 = (Button)findViewById(R.id.butPlPlay);
         button8 = (Button)findViewById(R.id.butStop);
         button9 = (Button)findViewById(R.id.butPause);
         button10 = (Button)findViewById(R.id.butSkipLeft);
         button11 = (Button)findViewById(R.id.butSkipRight);
         button12 = (Button)findViewById(R.id.butClear);
-        //button13 = (Button)findViewById(R.id.butQuit);
+        button13 = (Button)findViewById(R.id.butPlaylist);
+
+        //ArrayAdapter playlistResults = new ArrayAdapter(this, R.layout.list_item);
+        //lstPl.setAdapter(playlistResults);
 
         currentTrack = (TextView)findViewById(R.id.txtTrack);
 
@@ -143,15 +146,19 @@ public class MainActivity extends ActionBarActivity {
 
     }
 
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
         //return from search view
-        if (requestCode == 1) {
-            if(resultCode == RESULT_OK){
+        if (requestCode == 1)
+        {
+            if(resultCode == RESULT_OK)
+            {
                 //searchData = data.getStringArrayListExtra("selected");
                 searchData = data.getStringExtra("selected");
                 searchRes = true;
             }
-            if (resultCode == RESULT_CANCELED) {
+            if (resultCode == RESULT_CANCELED)
+            {
                 searchRes = false;
                 searchData = "";
                 //Write your code if there's no result
@@ -160,7 +167,8 @@ public class MainActivity extends ActionBarActivity {
         }
 
         //return from settings view
-        if (requestCode == 2) {
+        if (requestCode == 2)
+        {
             if(resultCode == RESULT_OK)
             {
                 //set globals and configs
@@ -182,10 +190,50 @@ public class MainActivity extends ActionBarActivity {
                 editor.commit();
 
             }
+
             if (resultCode == RESULT_CANCELED)
             {
                 //do nothing
             }
+        }
+
+        if (requestCode == 3)
+        {
+            String play = "";
+            String remove = "";
+
+            if(resultCode == RESULT_OK)
+            {
+                play = data.getStringExtra("play");
+                remove = data.getStringExtra("remove");
+
+                if (!play.isEmpty())
+                {
+                    //play request has come in
+                    playlistString = play;
+                    playlistAction = 0;
+                }
+                else if (!remove.isEmpty())
+                {
+                    //remove song has come in
+                    playlistString = remove;
+                    playlistAction = 1;
+                }
+                else
+                {
+                    //both are empty
+                    playlistString = "";
+                    playlistAction = -1;
+                }
+            }
+            if (resultCode == RESULT_CANCELED)
+            {
+                playlistString = "";
+                playlistAction = -1;
+            }
+
+            //clear playlist results list
+            playlistResults.clear();
         }
 
     }
@@ -197,8 +245,27 @@ public class MainActivity extends ActionBarActivity {
         if (searchRes == true)
         {
             searchRes = false;
-            pubnubSendRequest();
-            //handleSearch();
+            pubNubSendRequest();
+        }
+
+        //playlist action -1 - nothing, 0 - play, 1 - remove
+        if (playlistAction == -1)
+        {
+            //continue on
+        }
+        else if (playlistAction == 0)
+        {
+            //play a song in playlist
+            playlistAction = -1;
+            pubNubPlaySong();
+
+        }
+        else if (playlistAction == 1)
+        {
+            //remove a song from playlist
+            playlistAction = -1;
+            pubNubRemoveSong();
+
         }
     }
 
@@ -233,7 +300,8 @@ public class MainActivity extends ActionBarActivity {
                             if (query.isEmpty())
                             {
                                 showAlert("Nothing entered!", 0);
-                            } else
+                            }
+                            else
                             {
                                 //global variable
                                 pubNubSearchQuery(query);
@@ -436,6 +504,30 @@ public class MainActivity extends ActionBarActivity {
                     }
                 }
         );
+
+        //Playlist button
+        button13.setOnClickListener(
+                new Button.OnClickListener() {
+                    public void onClick(View v) {
+                        if (subscribed)
+                        {
+                            if (pubNubGetPlaylist())
+                            {
+                                showPlaylist(v, playlistResults);
+                            }
+                            else
+                            {
+
+                            }
+
+                        }
+                        else
+                        {
+                            showAlert("Not subscribed to an active channel!", 0);
+                        }
+                    }
+                }
+        );
 /*
         //Quit button
         button13.setOnClickListener(
@@ -516,6 +608,7 @@ public class MainActivity extends ActionBarActivity {
 
 
                     try {
+                        //Library search results array
                         if (resp.toString().contains("LIBRARY"))
                         {
                             ArrayList<String> results = new ArrayList<String>();
@@ -528,6 +621,7 @@ public class MainActivity extends ActionBarActivity {
 
                             searchResults = results;
                         }
+                        //Current track playing
                         else if (resp.toString().contains("CURRENT_TRACK"))
                         {
                             final String track = resp.optString("CURRENT_TRACK", "");
@@ -540,6 +634,31 @@ public class MainActivity extends ActionBarActivity {
                                     currentTrack.setText(track);
                                 }
                             });
+
+                        }
+                        //Whole playlist
+                        else if (resp.toString().contains("PLAYLIST"))
+                        {
+                            JSONArray arr = resp.getJSONArray("PLAYLIST");
+                            //ArrayList<String> playlistResults = new ArrayList<String>();
+
+                            for (int i = 0; i < arr.length(); i++)
+                            {
+                                playlistResults.add(arr.get(i).toString());
+                            }
+
+                            //final ArrayAdapter playlistAdapter = new ArrayAdapter(MainActivity.this, R.layout.list_item, playlistResults);
+
+                            /*
+                            //call into main thread to update the listview
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run()
+                                {
+                                    lstPl.setAdapter(playlistAdapter);
+                                }
+                            });
+                            */
 
                         }
                         else if (resp.toString().contains("ERROR"))
@@ -593,6 +712,44 @@ public class MainActivity extends ActionBarActivity {
 
     }
 
+    public boolean pubNubGetPlaylist()
+    {
+        JSONObject msg = new JSONObject();
+
+        try
+        {
+            msg.put("GET_PLAYLIST", "Current Playlist");
+        }
+        catch (JSONException e){ return false; }
+
+        Callback callback = new Callback() {
+            public void successCallback(String channel, Object response)
+            {
+                //Log.d("FooQueue",response.toString());
+            }
+            public void errorCallback(String channel, PubnubError error)
+            {
+                //Log.d("FooQueue",error.toString());
+            }
+        };
+
+        pubn.publish(channel, msg, callback);
+
+        //prevent race condition
+        try
+        {
+            Thread.sleep(500);                 //1000 milliseconds is one second.
+        }
+        catch(InterruptedException ex)
+        {
+            Thread.currentThread().interrupt();
+        }
+
+
+        return true;
+
+    }
+
     public void pubNubUpdateTrack()
     {
         JSONObject msg = new JSONObject();
@@ -629,7 +786,7 @@ public class MainActivity extends ActionBarActivity {
     }
 
     //Send song request to Foobar2k
-    public void pubnubSendRequest()
+    public void pubNubSendRequest()
     {
         JSONObject msg = new JSONObject();
 
@@ -638,6 +795,80 @@ public class MainActivity extends ActionBarActivity {
             msg.put("REQUEST", searchData);
         }
         catch (JSONException e){}
+
+        Callback callback = new Callback() {
+            public void successCallback(String channel, Object response)
+            {
+                //Log.d("FooQueue",response.toString());
+            }
+            public void errorCallback(String channel, PubnubError error)
+            {
+                //Log.d("FooQueue",error.toString());
+            }
+        };
+
+        pubn.publish(channel, msg , callback);
+
+        //prevent race condition
+        try
+        {
+            Thread.sleep(500);                 //1000 milliseconds is one second.
+        }
+        catch(InterruptedException ex)
+        {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    //play a song in the playlist
+    public void pubNubPlaySong()
+    {
+        JSONObject msg = new JSONObject();
+
+        try
+        {
+            msg.put("QUEUE_TRACK", playlistString);
+        }
+        catch (JSONException e){}
+
+        playlistString = "";
+
+        Callback callback = new Callback() {
+            public void successCallback(String channel, Object response)
+            {
+                //Log.d("FooQueue",response.toString());
+            }
+            public void errorCallback(String channel, PubnubError error)
+            {
+                //Log.d("FooQueue",error.toString());
+            }
+        };
+
+        pubn.publish(channel, msg , callback);
+
+        //prevent race condition
+        try
+        {
+            Thread.sleep(500);                 //1000 milliseconds is one second.
+        }
+        catch(InterruptedException ex)
+        {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    //Remove a song from the playlist
+    public void pubNubRemoveSong()
+    {
+        JSONObject msg = new JSONObject();
+
+        try
+        {
+            msg.put("REMOVE_TRACK", playlistString);
+        }
+        catch (JSONException e){}
+
+        playlistString = "";
 
         Callback callback = new Callback() {
             public void successCallback(String channel, Object response)
@@ -680,7 +911,7 @@ public class MainActivity extends ActionBarActivity {
                 case 4: query = "SKIP_RIGHT"; break;
                 default: query = "";
             }
-            msg.put("PLAY_CONTROL", query);
+            msg.put("CONTROL", query);
         }
         catch (JSONException e){}
 
@@ -1139,6 +1370,13 @@ public class MainActivity extends ActionBarActivity {
         intent.putExtra(EXTRA_MESSAGE3, channel);
         intent.putExtra(EXTRA_MESSAGE4, origin);
         startActivityForResult(intent, 2);
+    }
+
+    public void showPlaylist(View view, ArrayList<String> playlist)
+    {
+        Intent intent = new Intent( getBaseContext() , playlist_activity.class );
+        intent.putExtra(EXTRA_MESSAGE, playlist);
+        startActivityForResult(intent, 3);
     }
 
     /*
