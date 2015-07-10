@@ -115,9 +115,9 @@ public class MainActivity extends ActionBarActivity {
                 .build());
 
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-        channel = settings.getString("channel", "test_channel");
-        pubKey = settings.getString("pubkey", "pub-c-a8e83541-1fef-4a25-8f45-44481226dff4");
-        subKey = settings.getString("subkey", "sub-c-704f80ce-faa1-11e4-b360-02ee2ddab7fe");
+        channel = settings.getString("channel", "");
+        pubKey = settings.getString("pubkey", "");
+        subKey = settings.getString("subkey", "");
         origin = settings.getString("origin", "http://pubsub.pubnub.com");
         //boolean silent = settings.getBoolean("silentMode", false);
 
